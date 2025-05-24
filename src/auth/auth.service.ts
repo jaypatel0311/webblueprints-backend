@@ -1,9 +1,10 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import * as bcrypt from 'bcrypt';
+import * as argon2 from 'argon2';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { log } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -13,53 +14,94 @@ export class AuthService {
   ) {}
 
   private async validateUser(email: string, password: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+    try {
+      const user = await this.usersService.findByEmail(email);
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+  
+      const isPasswordValid = await argon2.verify(user.password, password);
+      console.log('Password validation:', {
+        password,
+        hashedPassword: user.password,
+        isValid: isPasswordValid
+      });
+  
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+  
+      const { password: _, ...result } = user.toObject();
+      return result;
+    } catch (error) {
+      console.error('Authentication error:', error);
+      throw new UnauthorizedException('Invalid credentials');
     }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password');
-    }
-
-    return user;
   }
-  async register(registerDto: RegisterDto): Promise<any> {
-    // Check if user exists
-    const existingUser = await this.usersService.findOne(registerDto.email);
-    if (existingUser) {
-      throw new BadRequestException('User already exists');
+ 
+  async register(registerDto: RegisterDto) {
+    try {
+      // Check existing user
+      const existingUser = await this.usersService.findByEmail(registerDto.email);
+      if (existingUser) {
+        throw new BadRequestException('User already exists');
+      }
+  
+      // Generate hash
+      const hashedPassword = await argon2.hash(registerDto.password);
+  
+      // Create user
+      const newUser = await this.usersService.create(
+        registerDto.username,
+        registerDto.email,
+        hashedPassword
+      );
+  
+      // Generate tokens
+      const tokens = await this.getTokens(newUser._id.toString(), newUser.email);
+  
+      // Return user data
+      const { password, ...userWithoutPassword } = newUser.toObject();
+      return {
+        user: userWithoutPassword,
+        ...tokens
+      };
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw new BadRequestException('Registration failed');
     }
-  
-    // Create new user
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-    const newUser = await this.usersService.create(
-      registerDto.username,
-      registerDto.email,
-      hashedPassword
-    );
-  
-    // Generate tokens
-    const tokens = await this.getTokens(newUser._id.toString(), newUser.email);
-    
-    // Update refresh token
-    await this.usersService.updateRefreshToken(newUser._id.toString(), tokens.refreshToken);
-  
-    // Return user and tokens
-    const { password, ...result } = newUser.toObject();
-    return {
-      user: result,
-      ...tokens
-    };
   }
+
 
 
   async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
-    const tokens = await this.getTokens(user._id.toString(), user.email);
-    await this.usersService.updateRefreshToken(user._id.toString(), tokens.refreshToken);
-    return tokens;
+    try {
+      // Find user
+      const user = await this.usersService.findByEmail(loginDto.email);
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+  
+      // Verify password
+      const isPasswordValid = await argon2.verify(user.password, loginDto.password);
+  
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+  
+      // Generate tokens
+      const tokens = await this.getTokens(user._id.toString(), user.email);
+  
+      // Return user data
+      const { password, ...userWithoutPassword } = user.toObject();
+      return {
+        user: userWithoutPassword,
+        ...tokens
+      };
+    } catch (error) {
+      console.error('Login error:', error);
+      throw new UnauthorizedException('Invalid credentials');
+    }
   }
 
   async logout(userId: string) {
@@ -89,7 +131,7 @@ export class AuthService {
         { sub: userId, email },
         {
           secret: process.env.JWT_SECRET,
-          expiresIn: process.env.JWT_EXPIRATION
+         expiresIn: '15m'
         }
       ),
       this.jwtService.signAsync(
