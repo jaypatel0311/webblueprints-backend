@@ -104,6 +104,27 @@ export class AuthService {
     }
   }
 
+  async changePassword(userId: string, oldPassword: string, newPassword: string) {
+    if (!userId) {
+      throw new UnauthorizedException('User ID is required');
+    }
+  
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+  
+    const isOldPasswordValid = await argon2.verify(user.password, oldPassword);
+    if (!isOldPasswordValid) {
+      throw new BadRequestException('Old password is incorrect');
+    }
+  
+    const hashedPassword = await argon2.hash(newPassword);
+    await this.usersService.updatePassword(userId, hashedPassword);
+  
+    return { message: 'Password changed successfully' };
+  }
+
   async logout(userId: string) {
     return this.usersService.updateRefreshToken(userId, null);
   }

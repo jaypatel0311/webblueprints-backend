@@ -1,8 +1,9 @@
 // filepath: src/users/users.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { UserDocument } from './schemas/user.schema';
+import * as argon2 from 'argon2';
 
 @Injectable()
 export class UsersService {
@@ -27,6 +28,8 @@ export class UsersService {
     const user = await this.userModel.findOne({ email }).exec();
     return user;
   }
+
+  
 
   async updateRefreshToken(userId: string, refreshToken: string | null): Promise<UserDocument> {
     const user = await this.userModel
