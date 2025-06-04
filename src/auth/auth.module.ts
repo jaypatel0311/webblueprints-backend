@@ -5,6 +5,8 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -15,7 +17,12 @@ import { AuthController } from './auth.controller';
       signOptions: { expiresIn: process.env.JWT_EXPIRATION },
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy,
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    }
+  ],
   controllers: [AuthController],
   exports: [AuthService],
 })

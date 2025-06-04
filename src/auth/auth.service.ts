@@ -5,6 +5,7 @@ import * as argon2 from 'argon2';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { log } from 'console';
+import { Role } from './enums/role.enums';
 
 @Injectable()
 export class AuthService {
@@ -58,7 +59,7 @@ export class AuthService {
       );
   
       // Generate tokens
-      const tokens = await this.getTokens(newUser._id.toString(), newUser.email);
+      const tokens = await this.getTokens(newUser._id.toString(), newUser.email, newUser.role);
   
       // Return user data
       const { password, ...userWithoutPassword } = newUser.toObject();
@@ -90,12 +91,15 @@ export class AuthService {
       }
   
       // Generate tokens
-      const tokens = await this.getTokens(user._id.toString(), user.email);
+      const tokens = await this.getTokens(user._id.toString(), user.email, user.role);
   
       // Return user data
       const { password, ...userWithoutPassword } = user.toObject();
       return {
-        user: userWithoutPassword,
+        user: {
+          ...userWithoutPassword,
+          role: user.role // Explicitly include role in response
+        },
         ...tokens
       };
     } catch (error) {
@@ -120,7 +124,7 @@ export class AuthService {
     }
   
     const hashedPassword = await argon2.hash(newPassword);
-    await this.usersService.updatePassword(userId, hashedPassword);
+    // await this.usersService.updatePassword(userId, hashedPassword);
   
     return { message: 'Password changed successfully' };
   }
@@ -138,7 +142,7 @@ export class AuthService {
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
-      const tokens = await this.getTokens(user._id.toString(), user.email);
+      const tokens = await this.getTokens(user._id.toString(), user.email, user.role);
       await this.usersService.updateRefreshToken(user._id.toString(), tokens.refreshToken);
       return tokens;
     } catch {
@@ -146,17 +150,17 @@ export class AuthService {
     }
   }
 
-  private async getTokens(userId: string, email: string) {
+  private async getTokens(userId: string, email: string, role: Role) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
-        { sub: userId, email },
+        { sub: userId, email, role },
         {
           secret: process.env.JWT_SECRET,
          expiresIn: '15m'
         }
       ),
       this.jwtService.signAsync(
-        { sub: userId, email },
+        { sub: userId, email, role },
         {
           secret: process.env.JWT_REFRESH_SECRET,
           expiresIn: '7d'
