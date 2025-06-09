@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { CreateTemplateDto } from './dto/create-template.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Template, TemplateDocument } from './template.schema';
@@ -9,8 +10,17 @@ export class TemplatesService {
     @InjectModel(Template.name) private templateModel: Model<TemplateDocument>,
   ) {}
 
-  async create(data: Partial<Template>): Promise<Template> {
-    const newTemplate = new this.templateModel(data);
+  async create(createTemplateDto: CreateTemplateDto): Promise<Template> {
+    // Ensure price is correctly formatted
+    const price = createTemplateDto.price ? 
+      parseFloat(createTemplateDto.price.toFixed(2)) : 
+      0;
+      
+    const newTemplate = new this.templateModel({
+      ...createTemplateDto,
+      price
+    });
+    
     return newTemplate.save();
   }
 

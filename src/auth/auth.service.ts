@@ -150,24 +150,32 @@ export class AuthService {
     }
   }
 
-  private async getTokens(userId: string, email: string, role: Role) {
+  async getTokens(userId: string, email: string, role: Role) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
-        { sub: userId, email, role },
+        {
+          sub: userId,
+          email,
+          role
+        },
         {
           secret: process.env.JWT_SECRET,
-         expiresIn: '15m'
-        }
+          expiresIn: process.env.JWT_EXPIRATION || '1d',
+        },
       ),
       this.jwtService.signAsync(
-        { sub: userId, email, role },
+        {
+          sub: userId,
+          email,
+          role
+        },
         {
           secret: process.env.JWT_REFRESH_SECRET,
-          expiresIn: '7d'
-        }
-      )
+          expiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d',
+        },
+      ),
     ]);
-
+  
     return {
       accessToken,
       refreshToken

@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsBoolean, IsArray } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsString, IsOptional, IsBoolean, IsArray, IsNumber, Min } from 'class-validator';
 
 export class CreateTemplateDto {
   @IsString()
@@ -11,6 +12,19 @@ export class CreateTemplateDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  @Transform(({ value }) => {
+    // Handle string input from form data
+    if (typeof value === 'string') {
+      try {
+        // Try to parse JSON string
+        return JSON.parse(value);
+      } catch (e) {
+        // If parsing fails, split by comma
+        return value ? value.split(',').map(tag => tag.trim()) : [];
+      }
+    }
+    return value || [];
+  })
   tags?: string[];
 
   @IsOptional()
@@ -22,6 +36,16 @@ export class CreateTemplateDto {
   techStack?: string;
 
   @IsOptional()
+  @IsNumber({
+    allowNaN: false,
+    allowInfinity: false,
+    maxDecimalPlaces: 2
+  })
+  @Min(0)
+  @Type(() => Number)
+  price?: number;
+
+  @IsOptional()
   @IsString()
   previewImageUrl?: string;
 
@@ -31,6 +55,14 @@ export class CreateTemplateDto {
 
   @IsOptional()
   @IsBoolean()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      // Convert string to boolean
+      return value.toLowerCase() === 'true';
+    }
+    return value;
+  })
+  @Type(() => Boolean)
   isPremium?: boolean;
 
   @IsOptional()

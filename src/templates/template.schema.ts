@@ -20,6 +20,14 @@ export class Template {
   @Prop()
   techStack: string;
 
+  @Prop({ 
+    type: Number,
+    min: 0, 
+    default: 0,
+    get: (v: number) => parseFloat(v.toFixed(2)) // Round to 2 decimal places
+  })
+  price: number;
+
   @Prop()
   previewImageUrl: string;
 

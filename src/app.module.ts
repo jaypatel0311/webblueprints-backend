@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TemplatesModule } from './templates/templates.module';
+import { CommonModule } from './common/common.module';
 
 const MONGODB_DEFAULT_URI = 'mongodb://localhost:27017/webblueprints';
 
@@ -16,6 +17,7 @@ const MONGODB_DEFAULT_URI = 'mongodb://localhost:27017/webblueprints';
     AuthModule,
     UsersModule,
     TemplatesModule,
+    CommonModule
   ],
   controllers: [],
   providers: [],
