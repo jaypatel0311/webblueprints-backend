@@ -1,7 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema, Types } from 'mongoose';
-
-export type TemplateDocument = Template & Document;
+import { Document, Schema as MongooseSchema } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Template {
@@ -20,12 +18,7 @@ export class Template {
   @Prop()
   techStack: string;
 
-  @Prop({ 
-    type: Number,
-    min: 0, 
-    default: 0,
-    get: (v: number) => parseFloat(v.toFixed(2)) // Round to 2 decimal places
-  })
+  @Prop({ type: Number, min: 0, default: 0 })
   price: number;
 
   @Prop()
@@ -34,11 +27,28 @@ export class Template {
   @Prop()
   downloadUrl: string;
 
-  @Prop()
+  @Prop({ default: false })
   isPremium: boolean;
 
+  @Prop({ 
+    type: String, 
+    enum: ['pending', 'published', 'rejected'], 
+    default: 'pending' 
+  })
+  status: string;
+
+  @Prop({ type: String, default: '' })
+  adminComment: string;
+
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
-  createdBy: Types.ObjectId;
+  createdBy: MongooseSchema.Types.ObjectId;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
+  reviewedBy: MongooseSchema.Types.ObjectId;
+
+  @Prop()
+  reviewedAt: Date;
 }
 
 export const TemplateSchema = SchemaFactory.createForClass(Template);
+export type TemplateDocument = Template & Document;

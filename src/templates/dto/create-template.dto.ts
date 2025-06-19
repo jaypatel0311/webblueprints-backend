@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsString, IsOptional, IsBoolean, IsArray, IsNumber, Min } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsArray, IsNumber, Min, IsEnum } from 'class-validator';
 
 export class CreateTemplateDto {
   @IsString()
@@ -68,4 +68,14 @@ export class CreateTemplateDto {
   @IsOptional()
   @IsString()
   createdBy?: string;
+
+  @IsOptional()
+  @IsEnum(['pending', 'published', 'rejected'], {
+    message: 'Status must be either pending, published, or rejected'
+  })
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  adminComment?: string;
 }
