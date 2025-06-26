@@ -3,32 +3,30 @@ import { Document, Schema as MongooseSchema } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Template {
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   title: string;
 
-  @Prop()
+  @Prop({ required: true, type: String })
   description: string;
 
-  @Prop([String])
-  tags: string[];
-
-  @Prop()
-  category: string;
-
-  @Prop()
-  techStack: string;
-
-  @Prop({ type: Number, min: 0, default: 0 })
+  @Prop({ type: Number, default: 0 })
   price: number;
 
-  @Prop()
+  @Prop({ type: String })
+  category: string;
+
+  @Prop({ type: String })
   previewImageUrl: string;
 
-  @Prop()
+  @Prop({ type: String })
   downloadUrl: string;
 
-  @Prop({ default: false })
-  isPremium: boolean;
+  @Prop({ 
+    type: MongooseSchema.Types.ObjectId, 
+    ref: 'User',
+    required: true 
+  })
+  createdBy: MongooseSchema.Types.ObjectId;
 
   @Prop({ 
     type: String, 
@@ -38,17 +36,21 @@ export class Template {
   status: string;
 
   @Prop({ type: String, default: '' })
-  adminComment: string;
+  rejectionReason: string;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
-  createdBy: MongooseSchema.Types.ObjectId;
+  @Prop({ type: String, default: '' })
+  adminComments: string;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
-  reviewedBy: MongooseSchema.Types.ObjectId;
+  // Demo fields with explicit types
+  @Prop({ type: String, default: null })
+  demoUrl: string;
 
-  @Prop()
-  reviewedAt: Date;
+  @Prop({ type: Boolean, default: false })
+  hasLiveDemo: boolean;
+
+  @Prop({ type: String, default: null })
+  demoDeploymentId: string;
 }
 
-export const TemplateSchema = SchemaFactory.createForClass(Template);
 export type TemplateDocument = Template & Document;
+export const TemplateSchema = SchemaFactory.createForClass(Template);

@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TemplatesModule } from './templates/templates.module';
 import { CommonModule } from './common/common.module';
+import { DemoModule } from './templates/demo/demo.module';
 
 const MONGODB_DEFAULT_URI = 'mongodb://localhost:27017/webblueprints';
 
@@ -17,7 +18,8 @@ const MONGODB_DEFAULT_URI = 'mongodb://localhost:27017/webblueprints';
     AuthModule,
     UsersModule,
     TemplatesModule,
-    CommonModule
+    CommonModule,
+    DemoModule
   ],
   controllers: [],
   providers: [],

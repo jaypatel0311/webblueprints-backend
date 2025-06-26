@@ -39,6 +39,22 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
   }
+
+  async getUserProfile(userId: string) {
+    try {
+      const user = await this.usersService.findById(userId);
+      
+      // Don't return the password
+      const { password, ...userWithoutPassword } = user.toObject();
+      
+      return {
+        user: userWithoutPassword,
+        isAuthenticated: true
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid user');
+    }
+  }
  
   async register(registerDto: RegisterDto) {
     try {
@@ -51,11 +67,18 @@ export class AuthService {
       // Generate hash
       const hashedPassword = await argon2.hash(registerDto.password);
   
+       // Determine role (default to USER if not provided or if provided by non-admin)
+    let role = Role.USER; // Default role
+    
+    if (registerDto.role && registerDto.role === Role.ADMIN) {
+      role = Role.ADMIN;
+    }
       // Create user
       const newUser = await this.usersService.create(
         registerDto.username,
         registerDto.email,
-        hashedPassword
+        hashedPassword,
+        role
       );
   
       // Generate tokens

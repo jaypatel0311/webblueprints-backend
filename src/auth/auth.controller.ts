@@ -42,4 +42,11 @@ export class AuthController {
   async refresh(@Body() body: { refreshToken: string }) {
     return this.authService.refresh(body.refreshToken);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('validate')
+  async validateToken(@Req() req) {
+    // Return user information from JWT (excluding sensitive data)
+    return this.authService.getUserProfile(req.user.userId);
+  }
 }
