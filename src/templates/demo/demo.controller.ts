@@ -28,21 +28,9 @@ import {
       @Req() req
     ) {
       try {
-        this.logger.log(`Auth user: ${req.user?.userId}, role: ${req.user?.role}`);
-        
-        const isAdmin = req.user?.role === 'admin';
-        
         const template = await this.templateModel.findById(id);
         if (!template) {
           throw new NotFoundException(`Template with ID ${id} not found`);
-        }
-        
-        this.logger.log(`Template creator: ${template.createdBy.toString()}`);
-        const isOwner = template.createdBy.toString() === req.user.userId;
-        
-        this.logger.log(`isAdmin: ${isAdmin}, isOwner: ${isOwner}`);
-        if (!isAdmin && !isOwner) {
-          throw new ForbiddenException('Unauthorized to generate demo for this template');
         }
         
         const demoUrl = await this.demoService.generateDemo(id, req.user.userId);

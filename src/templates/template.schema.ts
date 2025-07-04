@@ -15,6 +15,9 @@ export class Template {
   @Prop({ type: String })
   category: string;
 
+  @Prop([String])
+  tags: string[];
+
   @Prop({ type: String })
   previewImageUrl: string;
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, Param, Put, Delete, UseInterceptors, UploadedFiles, Req, UseGuards, BadRequestException, ForbiddenException, Query, Patch, InternalServerErrorException } from '@nestjs/common';
+import { Body, Controller, Post, Get, Param, Put, Delete, UseInterceptors, UploadedFiles, Req, UseGuards, BadRequestException, ForbiddenException, Query, Patch, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { ObjectId } from 'mongodb';
 import { TemplatesService } from './templates.service';
 import { CreateTemplateDto } from './dto/create-template.dto';
@@ -17,7 +17,7 @@ export class TemplatesController {
     private readonly awsS3Service: AwsS3Service
   ) {}
 
- @Post()
+  @Post()
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'previewImage', maxCount: 1 }, 
@@ -28,7 +28,17 @@ export class TemplatesController {
     @Body() createTemplateDto: CreateTemplateDto,
     @Req() req
   ) {
+    // Debug authentication
+    this.logger.log(`Authorization header: ${req.headers.authorization ? 'Present' : 'Missing'}`);
+    this.logger.log(`User object: ${JSON.stringify(req.user)}`);
+    
+    if (!req.user) {
+      this.logger.error('No user found in request - authentication failed');
+      throw new UnauthorizedException('Authentication required');
+    }
+    
     this.logger.log(`Creating template: ${createTemplateDto.title}`);
+    this.logger.log(`User ID: ${req.user.userId}, Role: ${req.user.role}`);
     this.logger.log(`Received files: ${JSON.stringify(files ? Object.keys(files) : 'none')}`);
     
     if (!createTemplateDto.title) {
@@ -55,21 +65,20 @@ export class TemplatesController {
         );
       }
       
-     // Set status based on user role
-     const isAdmin = req.user?.role === 'admin';
-     const status = isAdmin ? 'published' : 'pending';
-     
-     this.logger.log(`Template will be created with status: ${status}`);
-     
-     const template = await this.templatesService.create({
-       ...createTemplateDto,
-       status,
-       adminComment: '',
-       previewImageUrl,
-       downloadUrl,
-       createdBy: req.user?.userId
-     });
-     
+      // Set status based on user role
+      const isAdmin = req.user?.role === 'admin';
+      const status = isAdmin ? 'published' : 'pending';
+      
+      this.logger.log(`Template will be created with status: ${status}`);
+      
+      const template = await this.templatesService.create({
+        ...createTemplateDto,
+        status,
+        adminComment: '',
+        previewImageUrl,
+        downloadUrl,
+        createdBy: req.user?.userId
+      });
       
       return {
         ...template,
