@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { TemplatesModule } from './templates/templates.module';
 import { CommonModule } from './common/common.module';
 import { DemoModule } from './templates/demo/demo.module';
+import { PaymentsModule } from './payments/payments.module';
 
 const MONGODB_DEFAULT_URI = 'mongodb://localhost:27017/webblueprints';
 
@@ -19,7 +20,8 @@ const MONGODB_DEFAULT_URI = 'mongodb://localhost:27017/webblueprints';
     UsersModule,
     TemplatesModule,
     CommonModule,
-    DemoModule
+    DemoModule,
+    PaymentsModule
   ],
   controllers: [],
   providers: [],

@@ -32,8 +32,22 @@ export class CreateTemplateDto {
   category?: string;
 
   @IsOptional()
-  @IsString()
-  techStack?: string;
+  @IsArray()
+  @IsString({ each: true })
+  @Transform(({ value }) => {
+    // Handle string input from form data
+    if (typeof value === 'string') {
+      try {
+        // Try to parse JSON string
+        return JSON.parse(value);
+      } catch (e) {
+        // If parsing fails, split by comma
+        return value ? value.split(',').map(teckStack => teckStack.trim()) : [];
+      }
+    }
+    return value || [];
+  })
+  teckStack?: string[];
 
   @IsOptional()
   @IsNumber({

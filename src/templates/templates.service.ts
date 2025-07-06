@@ -19,7 +19,6 @@ export class TemplatesService {
   ) {}
 
   async create(createTemplateDto: CreateTemplateDto): Promise<Template> {
-    // Ensure price is correctly formatted
     const price = createTemplateDto.price ? 
       parseFloat(createTemplateDto.price.toFixed(2)) : 
       0;
