@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException, InternalServerErrorException, ForbiddenException } from '@nestjs/common';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -8,6 +8,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as extract from 'extract-zip';
+import { Order, OrderDocument } from 'src/payments/schemas/order.schema';
 
 @Injectable()
 export class TemplatesService {
@@ -15,6 +16,7 @@ export class TemplatesService {
 
   constructor(
     @InjectModel(Template.name) private templateModel: Model<TemplateDocument>,
+    @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     private readonly awsS3Service: AwsS3Service
   ) {}
 
@@ -382,5 +384,59 @@ export class TemplatesService {
     if (!result) {
       throw new NotFoundException(`Template with id ${id} not found`);
     }
+  }
+
+  async downloadTemplate(templateId: string, userId: string) {
+    try {
+      // Check if template exists
+      const template = await this.templateModel.findById(templateId);
+      if (!template) {
+        throw new NotFoundException('Template not found');
+      }
+
+      // Check if user has purchased this template
+      const order = await this.orderModel.findOne({
+        userId,
+        templateId,
+        status: 'succeeded'
+      });
+
+      if (!order) {
+        throw new ForbiddenException('You must purchase this template before downloading');
+      }
+
+      // Return download URL and template info
+      return {
+        downloadUrl: template.downloadUrl,
+        templateTitle: template.title,
+        templateId: template._id,
+        purchaseDate: order.createdAt
+      };
+    } catch (error) {
+      this.logger.error(`Error downloading template: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async checkUserOwnsTemplate(templateId: string, userId: string): Promise<boolean> {
+    const order = await this.orderModel.findOne({
+      userId,
+      templateId,
+      status: 'succeeded'
+    });
+    return !!order;
+  }
+
+  async getUserPurchasedTemplates(userId: string) {
+    const orders = await this.orderModel
+      .find({ userId, status: 'succeeded' })
+      .populate('templateId')
+      .exec();
+
+    return orders.map(order => ({
+      template: order.templateId,
+      purchaseDate: order.createdAt,
+      downloadUrl: (order.templateId as any)?.downloadUrl || order.downloadUrl
+    }));
   }
 }

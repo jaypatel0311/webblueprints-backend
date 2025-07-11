@@ -108,6 +108,51 @@ export class TemplatesController {
   }
 }
 
+@Get(':id/download')
+@UseGuards(JwtAuthGuard)
+async downloadTemplate(
+  @Param('id') id: string,
+  @Req() req,
+  @Res() res
+) {
+  try {
+    const downloadInfo = await this.templatesService.downloadTemplate(id, req.user.userId);
+    
+    this.logger.log(`User ${req.user.userId} downloading template ${id}`);
+    
+    // Return download URL (for client to redirect)
+    return res.json({
+      success: true,
+      downloadUrl: downloadInfo.downloadUrl,
+      templateTitle: downloadInfo.templateTitle,
+      message: 'Download link generated successfully'
+    });
+  } catch (error) {
+    this.logger.error(`Download error: ${error.message}`);
+    throw error;
+  }
+}
+
+@Get('user/purchased')
+@UseGuards(JwtAuthGuard)
+async getUserPurchasedTemplates(@Req() req) {
+  return this.templatesService.getUserPurchasedTemplates(req.user.userId);
+}
+
+@Get(':id/check-ownership')
+@UseGuards(JwtAuthGuard)
+async checkTemplateOwnership(
+  @Param('id') id: string,
+  @Req() req
+) {
+  const owns = await this.templatesService.checkUserOwnsTemplate(id, req.user.userId);
+  return {
+    owns,
+    templateId: id,
+    userId: req.user.userId
+  };
+}
+
   @Get()
   async findAll(@Query() query, @Req() req) {
     // Extract query parameters
@@ -223,4 +268,8 @@ async updateStatus(
     throw error;
   }
 }
+}
+
+function Res(): (target: TemplatesController, propertyKey: "downloadTemplate", parameterIndex: 2) => void {
+  throw new Error('Function not implemented.');
 }

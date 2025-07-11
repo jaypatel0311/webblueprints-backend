@@ -29,6 +29,9 @@ export class Order {
 
   @Prop()
   stripeCustomerId: string;
+  
+  @Prop()
+  downloadUrl: string;
 
   @Prop({ type: Object })
   metadata: Record<string, any>;

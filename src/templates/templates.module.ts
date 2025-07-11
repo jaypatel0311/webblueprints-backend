@@ -4,10 +4,11 @@ import { TemplatesService } from './templates.service';
 import { TemplatesController } from './templates.controller';
 import { Template, TemplateSchema } from './template.schema';
 import { AwsS3Service } from 'src/common/services/aws-s3.service';
+import { Order, OrderSchema } from 'src/payments/schemas/order.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Template.name, schema: TemplateSchema }])
+    MongooseModule.forFeature([{ name: Template.name, schema: TemplateSchema }, { name: Order.name, schema: OrderSchema }])
   ],
   controllers: [TemplatesController],
   providers: [TemplatesService, AwsS3Service],
