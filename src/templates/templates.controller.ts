@@ -8,6 +8,7 @@ import { AwsS3Service } from '../common/services/aws-s3.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Logger } from '@nestjs/common';
 import { UpdateTemplateStatusDto } from './dto/update-template-status-sto';
+import { Response } from 'express';
 
 @Controller('templates')
 export class TemplatesController {
@@ -271,5 +272,11 @@ async updateStatus(
 }
 
 function Res(): (target: TemplatesController, propertyKey: "downloadTemplate", parameterIndex: 2) => void {
-  throw new Error('Function not implemented.');
+  return (target, propertyKey, parameterIndex) => {
+    const existingMetadata = Reflect.getMetadata('custom:res', target, propertyKey) || [];
+    existingMetadata.push(parameterIndex);
+    Reflect.defineMetadata('custom:res', existingMetadata, target, propertyKey);
+  };
 }
+//   throw new Error('Function not implemented.');
+// }
