@@ -58,7 +58,7 @@ import {
     async createOrder(
       @Body() body: {
         paymentIntentId: string;
-        templates: string[]; // Array of template IDs
+        templates: string[];
         totalAmount: number;
         status: string;
       },
@@ -74,18 +74,34 @@ import {
         throw new BadRequestException('Payment Intent ID is required');
       }
       
-      // For now, handle the first template (you can modify this for multiple templates later)
-      const templateId = body.templates[0];
-      
-      // You might want to fetch template details to get the title
-      // For now, using a placeholder title
-      return this.paymentsService.createOrder(
-        body.paymentIntentId,
-        req.user.userId,
-        templateId,
-        body.totalAmount,
-        'Template Purchase' // You can fetch actual template title if needed
-      );
+      try {
+        // Create orders for all templates
+        const orders = await Promise.all(
+          body.templates.map(async (templateId) => {
+            // Calculate individual template amount (you might want to fetch actual template prices)
+            const individualAmount = parseFloat((body.totalAmount / body.templates.length).toFixed(2));            
+            return this.paymentsService.createOrder(
+              body.paymentIntentId,
+              req.user.userId,
+              templateId,
+              individualAmount,
+              `Template Purchase - ID: ${templateId}`
+            );
+          })
+        );
+        
+        return {
+          success: true,
+          message: `Successfully created ${orders.length} orders`,
+          orders: orders,
+          totalAmount: body.totalAmount,
+          paymentIntentId: body.paymentIntentId,
+          templateCount: body.templates.length
+        };
+      } catch (error) {
+        console.error('Error creating multiple orders:', error);
+        throw new BadRequestException('Failed to create orders for all templates');
+      }
     }
   
     @Post('webhook')
